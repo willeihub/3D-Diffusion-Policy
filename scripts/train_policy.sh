@@ -31,12 +31,18 @@ else
     echo -e "\033[33mTrain mode\033[0m"
 fi
 
+if [ "$alg_name" = "dp3" ]; then
+    train_script="train_dp3.py"
+else
+    train_script="train_dp.py"
+fi
+
 cd 3D-Diffusion-Policy
 
 
 export HYDRA_FULL_ERROR=1 
 export CUDA_VISIBLE_DEVICES=${gpu_id}
-python train_dp.py --config-name=${config_name}.yaml \
+python ${train_script} --config-name=${config_name}.yaml \
                             task=${task_name} \
                             hydra.run.dir=${run_dir} \
                             training.debug=$DEBUG \

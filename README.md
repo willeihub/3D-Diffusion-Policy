@@ -5,7 +5,6 @@
 This implementation focuses on:
 1. Implementing DP approach based on DP3 framework
 2. Benchmarking both approaches on the MetaWorld reach-wall task
-3. Providing a comparative analysis platform between 2D and 3D visual representations in diffusion-based policies
 
 ## 💻 Installation
 
@@ -96,12 +95,6 @@ rm /path/to/data/metaworld_reach-wall_expert.zarr.zip
    wandb login
    bash scripts/train_policy.sh dp metaworld_reach-wall 0317 0 0
    ```
-
-> **Important Note**: The training script `scripts/train_policy.sh` calls `train_dp.py` by default. If you're training a DP model, you need to rename `train_dp.py` to `train_dp3.py` when training DP3
-
-## 📊 Comparative Analysis
-
-
 
 ## 🏷️ License
 This repository is released under the MIT license. See [LICENSE](LICENSE) for additional details.
