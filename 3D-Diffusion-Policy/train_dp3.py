@@ -87,7 +87,7 @@ class TrainDP3Workspace:
             RUN_CKPT = True
             verbose = False
         
-        RUN_VALIDATION = False # reduce time cost
+        RUN_VALIDATION = True # reduce time cost
         
         # resume training
         if cfg.training.resume:
@@ -192,7 +192,7 @@ class TrainDP3Workspace:
                 
                     # compute loss
                     t1_1 = time.time()
-                    raw_loss, loss_dict = self.model.compute_loss(batch)
+                    raw_loss = self.model.compute_loss(batch)
                     loss = raw_loss / cfg.training.gradient_accumulate_every
                     loss.backward()
                     
@@ -219,7 +219,7 @@ class TrainDP3Workspace:
                         'lr': lr_scheduler.get_last_lr()[0]
                     }
                     t1_5 = time.time()
-                    step_log.update(loss_dict)
+                    # step_log.update(loss_dict)
                     t2 = time.time()
                     
                     if verbose:
@@ -266,19 +266,29 @@ class TrainDP3Workspace:
             if (self.epoch % cfg.training.val_every) == 0 and RUN_VALIDATION:
                 with torch.no_grad():
                     val_losses = list()
+                    val_mse_errors = list()
                     with tqdm.tqdm(val_dataloader, desc=f"Validation epoch {self.epoch}", 
                             leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                         for batch_idx, batch in enumerate(tepoch):
                             batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
-                            loss, loss_dict = self.model.compute_loss(batch)
+                            loss = self.model.compute_loss(batch)
                             val_losses.append(loss)
+
+                            gt_action = batch['action']
+                            obs_dict = batch['obs']
+                            result = self.model.predict_action(obs_dict)
+                            pred_action = result['action_pred']
+                            mse = torch.nn.functional.mse_loss(pred_action, gt_action)
+                            val_mse_errors.append(mse.item())
+
                             if (cfg.training.max_val_steps is not None) \
                                 and batch_idx >= (cfg.training.max_val_steps-1):
                                 break
                     if len(val_losses) > 0:
                         val_loss = torch.mean(torch.tensor(val_losses)).item()
-                        # log epoch average validation loss
                         step_log['val_loss'] = val_loss
+                        val_mse = np.mean(val_mse_errors)
+                        step_log['val_action_mse_error'] = val_mse
 
             # run diffusion sampling on a training batch
             if (self.epoch % cfg.training.sample_every) == 0:

@@ -7,6 +7,9 @@ shape_meta: &shape_meta
     point_cloud:
       shape: [512, 3]
       type: point_cloud
+    image:
+      shape: [128, 128, 3]
+      type: rgb
     agent_pos:
       shape: [9]
       type: low_dim

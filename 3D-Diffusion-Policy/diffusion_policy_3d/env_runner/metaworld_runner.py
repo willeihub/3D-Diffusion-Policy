@@ -56,10 +56,10 @@ class MetaworldRunner(BaseRunner):
         self.max_steps = max_steps
         self.tqdm_interval_sec = tqdm_interval_sec
 
-        self.logger_util_test = logger_util.LargestKRecorder(K=3)
+        # self.logger_util_test = logger_util.LargestKRecorder(K=3)
         self.logger_util_test10 = logger_util.LargestKRecorder(K=5)
 
-    def run(self, policy: BasePolicy, save_video=False):
+    def run(self, policy: BasePolicy, save_video=True):
         device = policy.device
         dtype = policy.dtype
 
@@ -87,6 +87,7 @@ class MetaworldRunner(BaseRunner):
                     obs_dict_input = {}
                     obs_dict_input['point_cloud'] = obs_dict['point_cloud'].unsqueeze(0)
                     obs_dict_input['agent_pos'] = obs_dict['agent_pos'].unsqueeze(0)
+                    obs_dict_input['image'] = obs_dict['image'].unsqueeze(0)
                     action_dict = policy.predict_action(obs_dict_input)
 
                 np_action_dict = dict_apply(action_dict,
@@ -107,16 +108,16 @@ class MetaworldRunner(BaseRunner):
         max_rewards = collections.defaultdict(list)
         log_data = dict()
 
-        log_data['mean_traj_rewards'] = np.mean(all_traj_rewards)
-        log_data['mean_success_rates'] = np.mean(all_success_rates)
+        # log_data['mean_traj_rewards'] = np.mean(all_traj_rewards)
+        # log_data['mean_success_rates'] = np.mean(all_success_rates)
 
         log_data['test_mean_score'] = np.mean(all_success_rates)
         
-        cprint(f"test_mean_score: {np.mean(all_success_rates)}", 'green')
+        # cprint(f"test_mean_score: {np.mean(all_success_rates)}", 'green')
 
-        self.logger_util_test.record(np.mean(all_success_rates))
+        # self.logger_util_test.record(np.mean(all_success_rates))
         self.logger_util_test10.record(np.mean(all_success_rates))
-        log_data['SR_test_L3'] = self.logger_util_test.average_of_largest_K()
+        # log_data['SR_test_L3'] = self.logger_util_test.average_of_largest_K()
         log_data['SR_test_L5'] = self.logger_util_test10.average_of_largest_K()
         
 
