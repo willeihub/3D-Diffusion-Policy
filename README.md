@@ -1,4 +1,4 @@
-# Extended 3D Diffusion Policy Integrated with Diffusion Policy
+# Extended 3D Diffusion Policy with Diffusion Policy
 
 ## 📊 Implementation Scope
 
@@ -63,6 +63,19 @@ pip install zarr==2.12.0 wandb ipdb gpustat dm_control omegaconf hydra-core==1.2
 pip uninstall diffusers huggingface_hub -y
 pip install diffusers==0.20.0 huggingface_hub==0.14.1
 ```
+
+## 📦 Dataset
+
+[Download from OneDrive](https://1drv.ms/u/s!AqMe_P3KHrgna-XR5n3pkFVI5-o?e=CBH2EK)
+
+```bash
+# Create data directory
+cd 3D-Diffusion-Policy
+mkdir -p data
+
+# Extract dataset
+unzip /path/to/data/metaworld_reach-wall_expert.zarr.zip -d data/
+rm data/metaworld_reach-wall_expert.zarr.zip
 
 ## 🛠️ Usage
 
