@@ -68,7 +68,7 @@ pip install diffusers==0.20.0 huggingface_hub==0.14.1
 
 Download the pre-collected expert demonstrations for MetaWorld reach-wall task:
 
-[!(https://img.shields.io/badge/Download-OneDrive-blue)](https://1drv.ms/u/s!AqMe_P3KHrgna-XR5n3pkFVI5-o?e=CBH2EK)
+[![Download](https://img.shields.io/badge/Download-OneDrive-blue)](https://1drv.ms/u/s!AqMe_P3KHrgna-XR5n3pkFVI5-o?e=CBH2EK)
 
 Data Preparation:
 ```bash
