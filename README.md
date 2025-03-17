@@ -79,6 +79,8 @@ This implementation allows you to train and compare both DP3 and DP approaches:
    bash scripts/train_policy.sh dp metaworld_reach-wall 0317 0 0
    ```
 
+> **Important Note**: The training script `scripts/train_policy.sh` calls `train_dp3.py` by default. If you're training a DP model, you need to rename `train_dp3.py` to `train_dp.py` when training DP models
+
 The results are logged with `wandb`. Run `wandb login` before training to view results and videos for comparative analysis.
 
 ## 📊 Comparative Analysis
