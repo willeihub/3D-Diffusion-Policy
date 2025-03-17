@@ -68,9 +68,9 @@ pip install diffusers==0.20.0 huggingface_hub==0.14.1
 
 Download the pre-collected expert demonstrations for MetaWorld reach-wall task:
 
-[![Download](https://img.shields.io/badge/Download-OneDrive-blue)](https://1drv.ms/u/s!AqMe_P3KHrgna-XR5n3pkFVI5-o?e=CBH2EK)
+[!(https://img.shields.io/badge/Download-OneDrive-blue)](https://1drv.ms/u/s!AqMe_P3KHrgna-XR5n3pkFVI5-o?e=CBH2EK)
 
-Data Preparation
+Data Preparation:
 ```bash
 # Create data directory
 cd 3D-Diffusion-Policy
@@ -78,7 +78,7 @@ mkdir -p data
 
 # Extract dataset
 unzip /path/to/data/metaworld_reach-wall_expert.zarr.zip -d data/
-rm data/metaworld_reach-wall_expert.zarr.zip
+rm /path/to/data/metaworld_reach-wall_expert.zarr.zip
 ```
 
 ## 🛠️ Usage
