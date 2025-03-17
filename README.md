@@ -1,13 +1,11 @@
-# <a href="https://3d-diffusion-policy.github.io">Extended 3D Diffusion Policy Integrated with Diffusion Policy</a>
-
-This repository contains an extended implementation that integrates both the original [Diffusion Policy (DP)](https://diffusion-policy.cs.princeton.edu/) and [3D Diffusion Policy (DP3)](https://3d-diffusion-policy.github.io) frameworks. The implementation focuses on comparing these approaches on the MetaWorld environment.
+# Extended 3D Diffusion Policy Integrated with Diffusion Policy
 
 ## 📊 Implementation Scope
 
 This implementation focuses on:
-1. Integrating both DP and DP3 approaches in a unified framework
+1. Implementing DP approach based on DP3 framework
 2. Benchmarking both approaches on the MetaWorld reach-wall task
-3. Providing a platform for comparative analysis between 2D and 3D visual representations for diffusion-based policies
+3. Providing a comparative analysis platform between 2D and 3D visual representations in diffusion-based policies
 
 ## 💻 Installation
 
@@ -86,11 +84,7 @@ pip install diffusers==0.20.0 huggingface_hub==0.14.1
 
 ## 📊 Comparative Analysis
 
-This extended implementation allows for direct comparison between:
-- 3D point cloud-based representation learning (DP3)
-- 2D image-based representation learning (DP)
 
-on the same MetaWorld reach-wall task under identical training conditions.
 
 ## 🏷️ License
 This repository is released under the MIT license. See [LICENSE](LICENSE) for additional details.

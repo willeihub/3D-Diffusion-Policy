@@ -117,8 +117,8 @@ logging:
   group: ${exp_name}
   id: null
   mode: online
-  name: ${training.seed}
-  project: dp3
+  name: dp3
+  project: metaworld_reach-wall
   resume: true
   tags:
   - dp3
