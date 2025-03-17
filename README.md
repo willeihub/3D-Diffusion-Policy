@@ -39,7 +39,8 @@ echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64' >> ~/.bashr
 echo 'export MUJOCO_GL=egl' >> ~/.bashrc
 source ~/.bashrc
 
-# Install MuJoCo-py
+# Install MuJoCo-py (ensure you're in the dp3 environment)
+conda activate dp3
 cd 3D-Diffusion-Policy/third_party
 cd mujoco-py-2.1.2.14 && pip install -e . && cd ../..
 
@@ -67,21 +68,21 @@ pip install diffusers==0.20.0 huggingface_hub==0.14.1
 
 ## 🛠️ Usage
 
-This implementation allows you to train and compare both DP3 and DP approaches:
-
 1. **Training a DP3 policy on MetaWorld reach-wall task**:
    ```bash
+   conda activate dp3
+   wandb login
    bash scripts/train_policy.sh dp3 metaworld_reach-wall 0317 0 0
    ```
 
 2. **Training a DP policy on MetaWorld reach-wall task**:
    ```bash
+   conda activate dp3
+   wandb login
    bash scripts/train_policy.sh dp metaworld_reach-wall 0317 0 0
    ```
 
 > **Important Note**: The training script `scripts/train_policy.sh` calls `train_dp3.py` by default. If you're training a DP model, you need to rename `train_dp3.py` to `train_dp.py` when training DP models
-
-The results are logged with `wandb`. Run `wandb login` before training to view results and videos for comparative analysis.
 
 ## 📊 Comparative Analysis
 
