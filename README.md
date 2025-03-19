@@ -37,8 +37,7 @@ echo 'export MUJOCO_GL=egl' >> ~/.bashrc
 source ~/.bashrc
 
 # Install MuJoCo-py (ensure you're in the dp3 environment)
-conda activate dp3
-cd 3D-Diffusion-Policy/third_party
+cd third_party
 cd mujoco-py-2.1.2.14 && pip install -e . && cd ../..
 
 # Install MetaWorld environment
@@ -46,6 +45,7 @@ cd mujoco-py-2.1.2.14 && pip install -e . && cd ../..
 pip install setuptools==59.5.0 Cython==0.29.35 patchelf==0.17.2.0
 
 # Install Gym 0.21.0
+# Before installation, please modify "opencv-python>=3." to "opencv-python>=3.4.0" in setup.py
 cd third_party
 cd gym-0.21.0 && pip install -e . && cd ..
 
@@ -56,12 +56,7 @@ cd Metaworld && pip install -e . && cd ..
 cd pytorch3d_simplified && pip install -e . && cd ..
 
 # Install required packages
-pip install zarr==2.12.0 wandb ipdb gpustat dm_control omegaconf hydra-core==1.2.0 dill==0.3.5.1 einops==0.4.1 numba==0.56.4 moviepy imageio av matplotlib termcolor natsort open3d
-
-# Fix version conflicts
-pip uninstall diffusers huggingface_hub -y
-pip install diffusers==0.20.0 huggingface_hub==0.14.1
-```
+pip install zarr==2.12.0 wandb ipdb gpustat dm_control omegaconf hydra-core==1.2.0 dill==0.3.5.1 einops==0.4.1 diffusers==0.20.0 numba==0.56.4 moviepy imageio av matplotlib termcolor natsort open3d huggingface_hub==0.14.1
 
 ## 📦 Dataset
 
