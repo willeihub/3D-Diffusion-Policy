@@ -57,6 +57,7 @@ cd pytorch3d_simplified && pip install -e . && cd ..
 
 # Install required packages
 pip install zarr==2.12.0 wandb ipdb gpustat dm_control omegaconf hydra-core==1.2.0 dill==0.3.5.1 einops==0.4.1 diffusers==0.20.0 numba==0.56.4 moviepy imageio av matplotlib termcolor natsort open3d huggingface_hub==0.14.1
+```
 
 ## 📦 Dataset
 
