@@ -18,7 +18,7 @@ shape_meta: &shape_meta
 
 env_runner:
   _target_: diffusion_policy_3d.env_runner.metaworld_runner.MetaworldRunner
-  eval_episodes: 20
+  eval_episodes: ${eval:'1 if ${training.debug} else 20'}
   n_obs_steps: ${n_obs_steps}
   n_action_steps: ${n_action_steps}
   fps: 10

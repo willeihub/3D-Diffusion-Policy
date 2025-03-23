@@ -20,16 +20,16 @@ gpu_id=${5}
 echo -e "\033[33mgpu id (to use): ${gpu_id}\033[0m"
 
 
-if [ $DEBUG = True ]; then
-    wandb_mode=offline
-    # wandb_mode=online
-    echo -e "\033[33mDebug mode!\033[0m"
-    echo -e "\033[33mDebug mode!\033[0m"
-    echo -e "\033[33mDebug mode!\033[0m"
-else
-    wandb_mode=online
-    echo -e "\033[33mTrain mode\033[0m"
-fi
+# if [ $DEBUG = True ]; then
+#     wandb_mode=disabled
+#     # wandb_mode=online
+#     echo -e "\033[33mDebug mode!\033[0m"
+#     echo -e "\033[33mDebug mode!\033[0m"
+#     echo -e "\033[33mDebug mode!\033[0m"
+# else
+#     wandb_mode=online
+#     echo -e "\033[33mTrain mode\033[0m"
+# fi
 
 if [ "$alg_name" = "dp3" ]; then
     train_script="train_dp3.py"
@@ -45,12 +45,9 @@ export CUDA_VISIBLE_DEVICES=${gpu_id}
 python ${train_script} --config-name=${config_name}.yaml \
                             task=${task_name} \
                             hydra.run.dir=${run_dir} \
-                            training.debug=$DEBUG \
                             training.seed=${seed} \
                             training.device="cuda:0" \
-                            exp_name=${exp_name} \
-                            logging.mode=${wandb_mode} \
-                            checkpoint.save_ckpt=${save_ckpt}
+                            exp_name=${exp_name} 
 
 
 

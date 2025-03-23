@@ -98,7 +98,7 @@ optimizer:
 training:
   device: "cuda:0"
   seed: 42
-  debug: False
+  debug: True
   resume: True
   lr_scheduler: cosine
   lr_warmup_steps: 500
@@ -116,7 +116,7 @@ training:
 logging:
   group: ${exp_name}
   id: null
-  mode: online
+  mode: ${eval:"'disabled' if ${training.debug} else 'online'"}
   name: dp3
   project: metaworld_reach-wall
   resume: true
