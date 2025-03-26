@@ -41,7 +41,6 @@ class TrainDPWorkspace:
         self.cfg = cfg
         self._output_dir = output_dir
         self._saving_thread = None
-
         # set seed
         seed = cfg.training.seed
         torch.manual_seed(seed)
@@ -65,7 +64,7 @@ class TrainDPWorkspace:
 
     def run(self):
         cfg = copy.deepcopy(self.cfg)
-
+        
         if cfg.training.debug:
             cfg.training.num_epochs = 2
             cfg.training.max_train_steps = 2
@@ -134,7 +133,7 @@ class TrainDPWorkspace:
 
         if env_runner is not None:
             assert isinstance(env_runner, BaseRunner)
-
+        
         cfg.logging.name = str(cfg.logging.name)
         # configure logging
         if not cfg.training.debug:
@@ -196,7 +195,7 @@ class TrainDPWorkspace:
                     # update ema
                     if cfg.training.use_ema:
                         ema.step(self.model)
-
+                    
                     # logging
                     raw_loss_cpu = raw_loss.item()
                     tepoch.set_postfix(loss=raw_loss_cpu, refresh=False)
@@ -247,7 +246,6 @@ class TrainDPWorkspace:
                             batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
                             loss = self.model.compute_loss(batch)
                             val_losses.append(loss)
-                            
                             gt_action = batch['action']
                             obs_dict = batch['obs']
                             result = self.model.predict_action(obs_dict)
@@ -258,11 +256,11 @@ class TrainDPWorkspace:
                             if (cfg.training.max_val_steps is not None) \
                                 and batch_idx >= (cfg.training.max_val_steps-1):
                                 break
-                        if len(val_losses) > 0:
-                            val_loss = torch.mean(torch.tensor(val_losses)).item()
-                            step_log['val_loss'] = val_loss
-                            val_mse = np.mean(val_mse_errors)
-                            step_log['val_action_mse_error'] = val_mse
+                    if len(val_losses) > 0:
+                        val_loss = torch.mean(torch.tensor(val_losses)).item()
+                        step_log['val_loss'] = val_loss
+                        val_mse = np.mean(val_mse_errors)
+                        step_log['val_action_mse_error'] = val_mse
 
             # run diffusion sampling on a training batch
             if (self.epoch % cfg.training.sample_every) == 0:

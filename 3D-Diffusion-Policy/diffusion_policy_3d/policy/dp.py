@@ -50,7 +50,6 @@ class DP(BasePolicy):
 
         # create diffusion model
         obs_feature_dim = obs_encoder.output_shape()[0]
-        # print(f"[Debug] 视觉编码器特征维度 obs_feature_dim: {obs_feature_dim}")
         input_dim = action_dim + obs_feature_dim
         global_cond_dim = None
         if obs_as_global_cond:
@@ -84,7 +83,6 @@ class DP(BasePolicy):
             fix_obs_steps=True,
             action_visible=False
         )
-
         self.normalizer = LinearNormalizer()
         self.horizon = horizon
         self.obs_feature_dim = obs_feature_dim
@@ -125,15 +123,14 @@ class DP(BasePolicy):
             trajectory[condition_mask] = condition_data[condition_mask]
 
             # 2. predict model output
-            model_output = model(trajectory, t, 
-                local_cond=local_cond, global_cond=global_cond)
+            model_output = model(sample=trajectory, timestep=t, local_cond=local_cond, global_cond=global_cond)
 
             # 3. compute previous image: x_t -> x_t-1
             trajectory = scheduler.step(
                 model_output, t, trajectory, ).prev_sample
         
         # finally make sure conditioning is enforced
-        trajectory[condition_mask] = condition_data[condition_mask]        
+        trajectory[condition_mask] = condition_data[condition_mask]
 
         return trajectory
 
@@ -143,7 +140,6 @@ class DP(BasePolicy):
         obs_dict: must include "obs" key
         result: must include "action" key
         """
-        assert 'past_action' not in obs_dict # not implemented yet
         # normalize input
         nobs = self.normalizer.normalize(obs_dict)
         value = next(iter(nobs.values()))
@@ -269,8 +265,7 @@ class DP(BasePolicy):
         noisy_trajectory[condition_mask] = cond_data[condition_mask]
         
         # Predict the noise residual
-        pred = self.model(noisy_trajectory, timesteps, 
-            local_cond=local_cond, global_cond=global_cond)
+        pred = self.model(sample=noisy_trajectory, timestep=timesteps, local_cond=local_cond, global_cond=global_cond)
 
         pred_type = self.noise_scheduler.config.prediction_type 
         if pred_type == 'epsilon':
@@ -284,4 +279,6 @@ class DP(BasePolicy):
         loss = loss * loss_mask.type(loss.dtype)
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
         loss = loss.mean()
+        
         return loss
+

@@ -1,14 +1,9 @@
 from typing import Dict
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, reduce
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
-from termcolor import cprint
-import copy
-import time
-import pytorch3d.ops as torch3d_ops
 
 from diffusion_policy_3d.model.common.normalizer import LinearNormalizer
 from diffusion_policy_3d.policy.base_policy import BasePolicy
@@ -79,13 +74,8 @@ class DP3(BasePolicy):
             else:
                 global_cond_dim = obs_feature_dim * n_obs_steps
         
-
         self.use_pc_color = use_pc_color
         self.pointnet_type = pointnet_type
-        cprint(f"[DiffusionUnetHybridPointcloudPolicy] use_pc_color: {self.use_pc_color}", "yellow")
-        cprint(f"[DiffusionUnetHybridPointcloudPolicy] pointnet_type: {self.pointnet_type}", "yellow")
-
-
 
         model = ConditionalUnet1D(
             input_dim=input_dim,
@@ -104,9 +94,6 @@ class DP3(BasePolicy):
         self.obs_encoder = obs_encoder
         self.model = model
         self.noise_scheduler = noise_scheduler
-        
-        
-        self.noise_scheduler_pc = copy.deepcopy(noise_scheduler)
         self.mask_generator = LowdimMaskGenerator(
             action_dim=action_dim,
             obs_dim=0 if obs_as_global_cond else obs_feature_dim,
@@ -114,7 +101,6 @@ class DP3(BasePolicy):
             fix_obs_steps=True,
             action_visible=False
         )
-        
         self.normalizer = LinearNormalizer()
         self.horizon = horizon
         self.obs_feature_dim = obs_feature_dim
@@ -134,7 +120,6 @@ class DP3(BasePolicy):
     # ========= inference  ============
     def conditional_sample(self, 
             condition_data, condition_mask,
-            condition_data_pc=None, condition_mask_pc=None,
             local_cond=None, global_cond=None,
             generator=None,
             # keyword arguments to scheduler.step
@@ -142,7 +127,6 @@ class DP3(BasePolicy):
             ):
         model = self.model
         scheduler = self.noise_scheduler
-
 
         trajectory = torch.randn(
             size=condition_data.shape, 
@@ -152,24 +136,19 @@ class DP3(BasePolicy):
         # set step values
         scheduler.set_timesteps(self.num_inference_steps)
 
-
         for t in scheduler.timesteps:
             # 1. apply conditioning
             trajectory[condition_mask] = condition_data[condition_mask]
 
+            # 2. predict model output
+            model_output = model(sample=trajectory, timestep=t, local_cond=local_cond, global_cond=global_cond)
 
-            model_output = model(sample=trajectory,
-                                timestep=t, 
-                                local_cond=local_cond, global_cond=global_cond)
-            
             # 3. compute previous image: x_t -> x_t-1
             trajectory = scheduler.step(
                 model_output, t, trajectory, ).prev_sample
-            
-                
+        
         # finally make sure conditioning is enforced
-        trajectory[condition_mask] = condition_data[condition_mask]   
-
+        trajectory[condition_mask] = condition_data[condition_mask]
 
         return trajectory
 
@@ -184,9 +163,7 @@ class DP3(BasePolicy):
         # this_n_point_cloud = nobs['imagin_robot'][..., :3] # only use coordinate
         if not self.use_pc_color:
             nobs['point_cloud'] = nobs['point_cloud'][..., :3]
-        this_n_point_cloud = nobs['point_cloud']
-        
-        
+                
         value = next(iter(nobs.values()))
         B, To = value.shape[:2]
         T = self.horizon
@@ -241,15 +218,13 @@ class DP3(BasePolicy):
         start = To - 1
         end = start + self.n_action_steps
         action = action_pred[:,start:end]
-        
-        # get prediction
 
+        # get prediction
 
         result = {
             'action': action,
             'action_pred': action_pred,
         }
-        
         return result
 
     # ========= training  ============
@@ -273,24 +248,17 @@ class DP3(BasePolicy):
         global_cond = None
         trajectory = nactions
         cond_data = trajectory
-        
-       
-        
         if self.obs_as_global_cond:
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, 
                 lambda x: x[:,:self.n_obs_steps,...].reshape(-1,*x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs)
-
             if "cross_attention" in self.condition_type:
                 # treat as a sequence
                 global_cond = nobs_features.reshape(batch_size, self.n_obs_steps, -1)
             else:
                 # reshape back to B, Do
                 global_cond = nobs_features.reshape(batch_size, -1)
-            # this_n_point_cloud = this_nobs['imagin_robot'].reshape(batch_size,-1, *this_nobs['imagin_robot'].shape[1:])
-            this_n_point_cloud = this_nobs['point_cloud'].reshape(batch_size,-1, *this_nobs['point_cloud'].shape[1:])
-            this_n_point_cloud = this_n_point_cloud[..., :3]
         else:
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, lambda x: x.reshape(-1, *x.shape[2:]))
@@ -300,28 +268,22 @@ class DP3(BasePolicy):
             cond_data = torch.cat([nactions, nobs_features], dim=-1)
             trajectory = cond_data.detach()
 
-
         # generate impainting mask
         condition_mask = self.mask_generator(trajectory.shape)
 
         # Sample noise that we'll add to the images
         noise = torch.randn(trajectory.shape, device=trajectory.device)
-
-        
         bsz = trajectory.shape[0]
         # Sample a random timestep for each image
         timesteps = torch.randint(
             0, self.noise_scheduler.config.num_train_timesteps, 
             (bsz,), device=trajectory.device
         ).long()
-
         # Add noise to the clean images according to the noise magnitude at each timestep
         # (this is the forward diffusion process)
         noisy_trajectory = self.noise_scheduler.add_noise(
             trajectory, noise, timesteps)
         
-
-
         # compute loss mask
         loss_mask = ~condition_mask
 
@@ -329,30 +291,13 @@ class DP3(BasePolicy):
         noisy_trajectory[condition_mask] = cond_data[condition_mask]
 
         # Predict the noise residual
-        
-        pred = self.model(sample=noisy_trajectory, 
-                        timestep=timesteps, 
-                            local_cond=local_cond, 
-                            global_cond=global_cond)
-
+        pred = self.model(sample=noisy_trajectory, timestep=timesteps, local_cond=local_cond, global_cond=global_cond)
 
         pred_type = self.noise_scheduler.config.prediction_type 
         if pred_type == 'epsilon':
             target = noise
         elif pred_type == 'sample':
             target = trajectory
-        elif pred_type == 'v_prediction':
-            # https://github.com/huggingface/diffusers/blob/main/src/diffusers/schedulers/scheduling_dpmsolver_multistep.py
-            # https://github.com/huggingface/diffusers/blob/v0.11.1-patch/src/diffusers/schedulers/scheduling_dpmsolver_multistep.py
-            # sigma = self.noise_scheduler.sigmas[timesteps]
-            # alpha_t, sigma_t = self.noise_scheduler._sigma_to_alpha_sigma_t(sigma)
-            self.noise_scheduler.alpha_t = self.noise_scheduler.alpha_t.to(self.device)
-            self.noise_scheduler.sigma_t = self.noise_scheduler.sigma_t.to(self.device)
-            alpha_t, sigma_t = self.noise_scheduler.alpha_t[timesteps], self.noise_scheduler.sigma_t[timesteps]
-            alpha_t = alpha_t.unsqueeze(-1).unsqueeze(-1)
-            sigma_t = sigma_t.unsqueeze(-1).unsqueeze(-1)
-            v_t = alpha_t * noise - sigma_t * trajectory
-            target = v_t
         else:
             raise ValueError(f"Unsupported prediction type {pred_type}")
 
@@ -360,17 +305,6 @@ class DP3(BasePolicy):
         loss = loss * loss_mask.type(loss.dtype)
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
         loss = loss.mean()
-        
-
-        # loss_dict = {
-        #         'bc_loss': loss.item(),
-        #     }
-
-        # print(f"t2-t1: {t2-t1:.3f}")
-        # print(f"t3-t2: {t3-t2:.3f}")
-        # print(f"t4-t3: {t4-t3:.3f}")
-        # print(f"t5-t4: {t5-t4:.3f}")
-        # print(f"t6-t5: {t6-t5:.3f}")
         
         return loss
 

@@ -22,15 +22,15 @@ policy:
   use_down_condition: true
   use_mid_condition: true
   use_up_condition: true
-  
+
   diffusion_step_embed_dim: 128
   down_dims:
   - 512
   - 1024
   - 2048
   crop_shape:
-  - 80
-  - 80
+  - 114
+  - 114
   encoder_output_dim: 64
   horizon: ${horizon}
   kernel_size: 5
@@ -98,7 +98,7 @@ optimizer:
 training:
   device: "cuda:0"
   seed: 42
-  debug: True
+  debug: False
   resume: True
   lr_scheduler: cosine
   lr_warmup_steps: 500
