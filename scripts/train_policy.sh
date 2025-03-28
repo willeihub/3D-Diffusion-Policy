@@ -1,6 +1,6 @@
 # Examples:
 # bash scripts/train_policy.sh dp3 metaworld_reach-wall 0317 0 0
-# bash scripts/train_policy.sh dp metaworld_reach-wall 0317 0 0
+# bash scripts/train_policy.sh dp_transformer metaworld_reach-wall 0317 0 0
 
 
 DEBUG=False
@@ -31,11 +31,7 @@ echo -e "\033[33mgpu id (to use): ${gpu_id}\033[0m"
 #     echo -e "\033[33mTrain mode\033[0m"
 # fi
 
-if [ "$alg_name" = "dp3" ]; then
-    train_script="train_dp3.py"
-else
-    train_script="train_dp.py"
-fi
+train_script="train_${alg_name}.py"
 
 cd 3D-Diffusion-Policy
 
