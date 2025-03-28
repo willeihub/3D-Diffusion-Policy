@@ -18,23 +18,20 @@ obs_as_global_cond: True
 policy:
   _target_: diffusion_policy_3d.policy.dp.DP
   use_point_crop: true
-  condition_type: film
-  use_down_condition: true
-  use_mid_condition: true
-  use_up_condition: true
 
   diffusion_step_embed_dim: 128
+  kernel_size: 5
+  n_groups: 8
   down_dims:
   - 512
   - 1024
   - 2048
+
   crop_shape:
   - 114
   - 114
   horizon: ${horizon}
-  kernel_size: 5
   n_action_steps: ${n_action_steps}
-  n_groups: 8
   n_obs_steps: ${n_obs_steps}
 
   noise_scheduler:
@@ -50,7 +47,7 @@ policy:
 
 
   num_inference_steps: 10
-  obs_as_global_cond: true
+  obs_as_global_cond: ${obs_as_global_cond}
   shape_meta: ${shape_meta}
 
   obs_encoder:
@@ -132,7 +129,7 @@ checkpoint:
     mode: max
     k: 1
     format_str: 'epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt'
-  save_last_ckpt: True # this only saves when save_ckpt is True
+  save_last_ckpt: True
   save_last_snapshot: False
 
 multi_run:

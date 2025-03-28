@@ -64,7 +64,6 @@ class TrainDP3Workspace:
 
     def run(self):
         cfg = copy.deepcopy(self.cfg)
-        
         if cfg.training.debug:
             cfg.training.num_epochs = 2
             cfg.training.max_train_steps = 2
@@ -81,7 +80,7 @@ class TrainDP3Workspace:
             RUN_CKPT = True
             verbose = False
         
-        RUN_VALIDATION = True # reduce time cost
+        RUN_VALIDATION = True
         
         # resume training
         if cfg.training.resume:
@@ -135,6 +134,7 @@ class TrainDP3Workspace:
             assert isinstance(env_runner, BaseRunner)
         
         cfg.logging.name = str(cfg.logging.name)
+
         # configure logging
         if not cfg.training.debug:
             wandb_run = wandb.init(
@@ -162,7 +162,7 @@ class TrainDP3Workspace:
         if self.ema_model is not None:
             self.ema_model.to(device)
         optimizer_to(self.optimizer, device)
-
+        
         # save batch for sampling
         train_sampling_batch = None
 

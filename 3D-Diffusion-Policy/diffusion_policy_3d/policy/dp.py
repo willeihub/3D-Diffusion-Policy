@@ -27,16 +27,10 @@ class DP(BasePolicy):
             down_dims=(256,512,1024),
             kernel_size=5,
             n_groups=8,
-            condition_type="film",
-            use_down_condition=True,
-            use_mid_condition=True,
-            use_up_condition=True,
-            crop_shape=None,
             # parameters passed to step
             **kwargs):
         super().__init__()
 
-        self.condition_type = condition_type
 
         # parse shape_meta
         action_shape = shape_meta['action']['shape']
@@ -54,10 +48,7 @@ class DP(BasePolicy):
         global_cond_dim = None
         if obs_as_global_cond:
             input_dim = action_dim
-            if "cross_attention" in self.condition_type:
-                global_cond_dim = obs_feature_dim
-            else:
-                global_cond_dim = obs_feature_dim * n_obs_steps
+            global_cond_dim = obs_feature_dim * n_obs_steps
 
         model = ConditionalUnet1D(
             input_dim=input_dim,
@@ -66,11 +57,7 @@ class DP(BasePolicy):
             diffusion_step_embed_dim=diffusion_step_embed_dim,
             down_dims=down_dims,
             kernel_size=kernel_size,
-            n_groups=n_groups,
-            condition_type=condition_type,
-            use_down_condition=use_down_condition,
-            use_mid_condition=use_mid_condition,
-            use_up_condition=use_up_condition,
+            n_groups=n_groups
         )
 
         self.obs_encoder = obs_encoder
@@ -96,9 +83,8 @@ class DP(BasePolicy):
             num_inference_steps = noise_scheduler.config.num_train_timesteps
         self.num_inference_steps = num_inference_steps
 
-
         print_params(self)
-        
+
     # ========= inference  ============
     def conditional_sample(self, 
             condition_data, condition_mask,
@@ -113,7 +99,8 @@ class DP(BasePolicy):
         trajectory = torch.randn(
             size=condition_data.shape, 
             dtype=condition_data.dtype,
-            device=condition_data.device)
+            device=condition_data.device,
+            generator=generator)
 
         # set step values
         scheduler.set_timesteps(self.num_inference_steps)
@@ -157,25 +144,21 @@ class DP(BasePolicy):
         local_cond = None
         global_cond = None
         if self.obs_as_global_cond:
-            # condition through global feature
             this_nobs = dict_apply(nobs, lambda x: x[:,:To,...].reshape(-1,*x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs)
-            if "cross_attention" in self.condition_type:
-                # treat as a sequence
-                global_cond = nobs_features.reshape(B, self.n_obs_steps, -1)
-            else:
-                # reshape back to B, Do
-                global_cond = nobs_features.reshape(B, -1)
-            # empty data for action
-            cond_data = torch.zeros(size=(B, T, Da), device=device, dtype=dtype)
+            # reshape back to B, Do
+            global_cond = nobs_features.reshape(B, -1)
+            shape = (B, T, Da)
+            cond_data = torch.zeros(size=shape, device=device, dtype=dtype)
             cond_mask = torch.zeros_like(cond_data, dtype=torch.bool)
         else:
             # condition through impainting
             this_nobs = dict_apply(nobs, lambda x: x[:,:To,...].reshape(-1,*x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs)
-            # reshape back to B, T, Do
+            # reshape back to B, To, Do
             nobs_features = nobs_features.reshape(B, To, -1)
-            cond_data = torch.zeros(size=(B, T, Da+Do), device=device, dtype=dtype)
+            shape = (B, T, Da+Do)
+            cond_data = torch.zeros(size=shape, device=device, dtype=dtype)
             cond_mask = torch.zeros_like(cond_data, dtype=torch.bool)
             cond_data[:,:To,Da:] = nobs_features
             cond_mask[:,:To,Da:] = True
@@ -196,12 +179,10 @@ class DP(BasePolicy):
         start = To - 1
         end = start + self.n_action_steps
         action = action_pred[:,start:end]
-
-        # get prediction
-
+        
         result = {
             'action': action,
-            'action_pred': action_pred,
+            'action_pred': action_pred
         }
         return result
 
@@ -211,36 +192,30 @@ class DP(BasePolicy):
 
     def compute_loss(self, batch):
         # normalize input
-
         nobs = self.normalizer.normalize(batch['obs'])
         nactions = self.normalizer['action'].normalize(batch['action'])
         batch_size = nactions.shape[0]
         horizon = nactions.shape[1]
+        To = self.n_obs_steps
 
         # handle different ways of passing observation
         local_cond = None
         global_cond = None
         trajectory = nactions
-        cond_data = trajectory
         if self.obs_as_global_cond:
-            # reshape B, T, ... to B*T
+            # reshape B, To, ... to B*To
             this_nobs = dict_apply(nobs, 
-                lambda x: x[:,:self.n_obs_steps,...].reshape(-1,*x.shape[2:]))
+                lambda x: x[:,:To,...].reshape(-1,*x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs)
-            if "cross_attention" in self.condition_type:
-                # treat as a sequence
-                global_cond = nobs_features.reshape(batch_size, self.n_obs_steps, -1)
-            else:
-                # reshape back to B, Do
-                global_cond = nobs_features.reshape(batch_size, -1)
+            # reshape back to B, Do
+            global_cond = nobs_features.reshape(batch_size, -1)
         else:
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, lambda x: x.reshape(-1, *x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs)
             # reshape back to B, T, Do
             nobs_features = nobs_features.reshape(batch_size, horizon, -1)
-            cond_data = torch.cat([nactions, nobs_features], dim=-1)
-            trajectory = cond_data.detach()
+            trajectory = torch.cat([nactions, nobs_features], dim=-1).detach()
 
         # generate impainting mask
         condition_mask = self.mask_generator(trajectory.shape)
@@ -262,7 +237,7 @@ class DP(BasePolicy):
         loss_mask = ~condition_mask
 
         # apply conditioning
-        noisy_trajectory[condition_mask] = cond_data[condition_mask]
+        noisy_trajectory[condition_mask] = trajectory[condition_mask]
         
         # Predict the noise residual
         pred = self.model(sample=noisy_trajectory, timestep=timesteps, local_cond=local_cond, global_cond=global_cond)

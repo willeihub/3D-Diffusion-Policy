@@ -64,7 +64,6 @@ class TrainDPWorkspace:
 
     def run(self):
         cfg = copy.deepcopy(self.cfg)
-        
         if cfg.training.debug:
             cfg.training.num_epochs = 2
             cfg.training.max_train_steps = 2
@@ -81,7 +80,7 @@ class TrainDPWorkspace:
             RUN_CKPT = True
             verbose = False
         
-        RUN_VALIDATION = True # reduce time cost
+        RUN_VALIDATION = True
         
         # resume training
         if cfg.training.resume:
@@ -135,6 +134,7 @@ class TrainDPWorkspace:
             assert isinstance(env_runner, BaseRunner)
         
         cfg.logging.name = str(cfg.logging.name)
+
         # configure logging
         if not cfg.training.debug:
             wandb_run = wandb.init(
@@ -162,7 +162,7 @@ class TrainDPWorkspace:
         if self.ema_model is not None:
             self.ema_model.to(device)
         optimizer_to(self.optimizer, device)
-
+        
         # save batch for sampling
         train_sampling_batch = None
 
@@ -180,7 +180,7 @@ class TrainDPWorkspace:
                     batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
                     if train_sampling_batch is None:
                         train_sampling_batch = batch
-
+                    
                     # compute loss
                     raw_loss = self.model.compute_loss(batch)
                     loss = raw_loss / cfg.training.gradient_accumulate_every
