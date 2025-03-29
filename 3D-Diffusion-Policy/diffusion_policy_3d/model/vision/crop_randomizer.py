@@ -27,8 +27,8 @@ class CropRandomizer(nn.Module):
         super().__init__()
 
         assert len(input_shape) == 3 # (C, H, W)
-        assert crop_height < input_shape[1]
-        assert crop_width < input_shape[2]
+        assert crop_height < input_shape[0]
+        assert crop_width < input_shape[1]
 
         self.input_shape = input_shape
         self.crop_height = crop_height

@@ -58,7 +58,7 @@ policy:
       name: resnet18
       weights: null
     resize_shape: null
-    random_crop: False
+    random_crop: True
     crop_shape: ${policy.crop_shape}
     use_group_norm: True
     share_rgb_model: False
